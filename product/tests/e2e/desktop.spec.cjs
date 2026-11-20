@@ -1,0 +1,20 @@
+const path=require('node:path');
+const {test,expect}=require('./fixtures.cjs');
+const {loadImage}=require('@napi-rs/canvas');
+const {readFileSync}=require('node:fs');
+const run=path.resolve(process.env.JIANXU_E2E_RUN||'../output/testing/RUN-20261029-002');
+const fixture=name=>path.resolve('tests/fixtures',name);
+const step=(page,name)=>page.getByRole('button',{name:new RegExp(name+'$')}).click();
+test('B01 B02 B07 smoke: real DOCX import → edit → confirm → PNG download',async({page})=>{
+ await page.goto('/');await page.getByRole('link',{name:/开始制作|进入工作台/}).first().click();
+ await page.getByLabel('选择本地文件').setInputFiles(fixture('fictional-01.docx'));
+ await expect(page.getByLabel('姓名',{exact:true})).toHaveValue('虚构测试1');
+ await page.getByLabel('求职方向',{exact:true}).fill('虚构桌面测试岗位');
+ await step(page,'确认生成');
+ await expect(page.getByRole('button',{name:'生成可下载 PNG',exact:true})).toBeDisabled();
+ await page.getByLabel(/我已逐项核对/).check();await step(page,'确认当前版本');await step(page,'生成可下载 PNG');
+ const link=page.getByRole('link',{name:'下载 PNG · 第 1 / 1 页',exact:true});await expect(link).toBeVisible();
+ const event=page.waitForEvent('download');await link.click();const download=await event;const file=path.join(run,'exports/smoke-1.png');await download.saveAs(file);
+ const image=await loadImage(readFileSync(file));expect([image.width,image.height]).toEqual([2480,3508]);
+ await page.screenshot({path:path.join(run,'screenshots/smoke-confirm.png'),fullPage:true});
+});

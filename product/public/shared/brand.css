@@ -1,0 +1,5 @@
+.jianxu-wordmark{display:inline-flex;align-items:center;gap:9px;color:var(--green,var(--navy,#244b68));white-space:nowrap;line-height:1}
+.jianxu-wordmark svg{width:25px;height:29px;fill:none;stroke:currentColor;stroke-width:1.35;flex:none}
+.jianxu-wordmark b{font-family:"Songti SC","STSong","Noto Serif CJK SC",serif;font-size:27px;font-weight:650;letter-spacing:.07em;line-height:1.25}
+.jianxu-wordmark[data-logo="editorial"] svg{display:none}
+.jianxu-wordmark[data-logo="editorial"] b{border-bottom:1px solid currentColor;padding-bottom:3px}

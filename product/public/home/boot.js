@@ -1,0 +1,1 @@
+if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&!new URLSearchParams(location.search).has('still')){document.documentElement.classList.add('sky-pending');setTimeout(()=>document.documentElement.classList.remove('sky-pending'),5000)}

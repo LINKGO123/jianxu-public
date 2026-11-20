@@ -1,0 +1,24 @@
+# Local user material and development evidence stay on this computer.
+/output/
+/tmp/
+/pdf文件库/
+/prototypes/
+/*.pdf
+/*.mov
+/*.mp4
+/*.m4v
+/*.webm
+
+# Rebuild dependencies and generated bundles from the locked sources.
+node_modules/
+dist/
+/product/public/vendor/
+coverage/
+test-results/
+playwright-report/
+
+# Local credentials, logs and system files.
+.env*
+*.log
+.DS_Store
+/.zcode/

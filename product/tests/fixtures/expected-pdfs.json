@@ -1,0 +1,70 @@
+[
+  {
+    "file": "fictional-graduate-two-column.pdf",
+    "name": "虚构应届双栏",
+    "lines": [
+      "姓名：虚构应届双栏",
+      "求职方向：测试岗位",
+      "教育背景",
+      "虚构学校 2022—2026",
+      "项目经历",
+      "虚构项目：核对 12 项测试记录。",
+      "自定义原文",
+      "仅为测试，不代表真人经历。"
+    ],
+    "profile": "graduate",
+    "layout": "two-column",
+    "pages": 1
+  },
+  {
+    "file": "fictional-graduate-multi-page.pdf",
+    "name": "虚构应届多页",
+    "lines": [
+      "姓名：虚构应届多页",
+      "求职方向：测试岗位",
+      "教育背景",
+      "虚构学校 2022—2026",
+      "项目经历",
+      "虚构项目：核对 12 项测试记录。",
+      "自定义原文",
+      "仅为测试，不代表真人经历。"
+    ],
+    "profile": "graduate",
+    "layout": "multi-page",
+    "pages": 2
+  },
+  {
+    "file": "fictional-experienced-two-column.pdf",
+    "name": "虚构社招双栏",
+    "lines": [
+      "姓名：虚构社招双栏",
+      "求职方向：测试岗位",
+      "工作经历",
+      "虚构公司 2021—2025",
+      "项目经历",
+      "虚构项目：核对 12 项测试记录。",
+      "自定义原文",
+      "仅为测试，不代表真人经历。"
+    ],
+    "profile": "experienced",
+    "layout": "two-column",
+    "pages": 1
+  },
+  {
+    "file": "fictional-experienced-multi-page.pdf",
+    "name": "虚构社招多页",
+    "lines": [
+      "姓名：虚构社招多页",
+      "求职方向：测试岗位",
+      "工作经历",
+      "虚构公司 2021—2025",
+      "项目经历",
+      "虚构项目：核对 12 项测试记录。",
+      "自定义原文",
+      "仅为测试，不代表真人经历。"
+    ],
+    "profile": "experienced",
+    "layout": "multi-page",
+    "pages": 2
+  }
+]

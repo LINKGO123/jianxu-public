@@ -1,0 +1,60 @@
+const fs=require('node:fs');
+const path=require('node:path');
+const crypto=require('node:crypto');
+const {test,expect,run,fixture,step,saved,state,confirm,download}=require('./fixtures.cjs');
+test('CURRENT4173: applied DOCX PDF CDATA → edit style layout → confirm invalidate → PNG → reload',async({page,context,browser,baseURL})=>{
+ test.setTimeout(120000);
+ expect(baseURL).toBe('http://127.0.0.1:4173');
+ const expected=JSON.parse(fs.readFileSync(path.join(run,'candidate-build.json'),'utf8'));
+ const loaded=[],pending=[],apiPaths=[],workerTargets=[];
+ const cdp=await browser.newBrowserCDPSession();
+ const workerTarget=({targetInfo})=>{if(targetInfo.type==='worker'&&targetInfo.url)workerTargets.push({type:targetInfo.type,url:targetInfo.url});};
+ cdp.on('Target.targetCreated',workerTarget);cdp.on('Target.targetInfoChanged',workerTarget);
+ await cdp.send('Target.setDiscoverTargets',{discover:true});
+ context.on('response',response=>{
+  const url=new URL(response.url());
+  if(url.pathname.startsWith('/api/'))apiPaths.push({path:url.pathname,status:response.status()});
+  if(url.pathname.startsWith('/assets/'))pending.push((async()=>{
+   const bytes=await response.body();loaded.push({path:url.pathname,status:response.status(),sha256:crypto.createHash('sha256').update(bytes).digest('hex')});
+  })());
+ });
+ await page.goto('/');await page.getByRole('link',{name:/开始制作|进入工作台/}).first().click();
+ await page.getByLabel('选择本地文件').setInputFiles(fixture('fictional-07.docx'));
+ await expect(page.getByLabel('姓名',{exact:true})).toHaveValue('虚构测试7');await saved(page);
+ const docxTruth=JSON.parse(fs.readFileSync(fixture('expected.json'),'utf8')).find(x=>x.file==='fictional-07.docx');
+ let current=await state(page);expect(current.document.sourceText).toBe(docxTruth.lines.join('\n'));
+ await expect(page.getByRole('textbox',{name:/^工作经历/})).toHaveValue(/虚构示范公司 2021—2025/);
+ expect(current.document.sections.find(x=>x.id==='work').text).toContain('成果编号 7');
+ await page.screenshot({path:path.join(run,'screenshots/current-docx.png'),fullPage:true});
+ await step(page,'上传简历');await page.getByLabel('选择本地文件').setInputFiles(fixture('fictional-experienced-multi-page.pdf'));
+ await expect(page.getByLabel('姓名',{exact:true})).toHaveValue('虚构社招多页');await saved(page);
+ const pdfTruth=JSON.parse(fs.readFileSync(fixture('expected-pdfs.json'),'utf8')).find(x=>x.file==='fictional-experienced-multi-page.pdf');
+ expect((await state(page)).document.sourceText).toBe(pdfTruth.lines.join('\n'));
+ await page.screenshot({path:path.join(run,'screenshots/current-pdf.png'),fullPage:true});
+ await step(page,'上传简历');await page.getByLabel('选择本地文件').setInputFiles(fixture('fictional-cdata.docx'));
+ await expect(page.getByLabel('姓名',{exact:true})).toHaveValue('虚构CDATA');
+ await expect(page.getByRole('textbox',{name:/^工作经历/})).toHaveValue('虚构公司 2021—2025，成果 42；<指令仅是原文> & 保留');
+ await page.getByRole('textbox',{name:/^工作经历/}).fill('虚构公司 2021—2025，成果 42；已手工核对。');await saved(page);
+ await step(page,'排版与形象');await page.getByRole('navigation',{name:'美化配置'}).getByRole('button',{name:'排版',exact:true}).click();await page.getByRole('button',{name:'右侧信息栏',exact:true}).click();await page.getByRole('navigation',{name:'美化配置'}).getByRole('button',{name:'风格',exact:true}).click();await page.getByRole('button',{name:'选择几何极简风格',exact:true}).click();
+ await confirm(page);await step(page,'整理内容');await page.getByRole('textbox',{name:/^工作经历/}).fill('虚构公司 2021—2025，成果 42；编辑后重新核对。');
+ await step(page,'确认生成');await expect(page.getByRole('button',{name:'生成可下载 PNG',exact:true})).toBeDisabled();await confirm(page);
+ const shortFiles=await download(page,'current-short');expect(shortFiles).toHaveLength(1);
+ await page.screenshot({path:path.join(run,'screenshots/current-confirm.png'),fullPage:true});
+ await step(page,'上传简历');await page.getByLabel('选择本地文件').setInputFiles(fixture('fictional-04.docx'));
+ await expect(page.getByLabel('姓名',{exact:true})).toHaveValue('虚构测试4');await saved(page);const long=await state(page);
+ expect(long.document.presentation.styleId).toBe('grid');expect(long.document.presentation.layoutId).toBe('sidebar-right');expect(long.document.sections.find(x=>x.id==='project').text).toContain('虚构项目段落 120');
+ await confirm(page);const longFiles=await download(page,'current-long');expect(longFiles).toHaveLength(9);await saved(page);
+ const before=await state(page);expect(before.history.length).toBeGreaterThan(0);await page.reload();await expect(page.getByRole('heading',{name:'确认生成',exact:true})).toBeVisible();await expect(page.getByText('预览已更新',{exact:true})).toBeVisible();
+ const after=await state(page);expect(after.document).toEqual(before.document);expect(after.history).toEqual(before.history);expect(after.assetIds).toEqual([]);
+ await page.screenshot({path:path.join(run,'screenshots/current-refreshed.png'),fullPage:true});
+ await Promise.all(pending);
+ fs.writeFileSync(path.join(run,'current-page-evidence.json'),JSON.stringify({baseURL,loadedAssets:loaded,workerTargets,apiPaths,shortPages:shortFiles.length,longPages:longFiles.length,refreshPreserved:true,historyCount:after.history.length,documentRevision:after.document.revision},null,2));
+ for(const kind of ['workbench','parser']){
+  const file=expected.assets.find(x=>x.kind===kind);expect(file,'candidate contains '+kind).toBeTruthy();const response=loaded.find(x=>x.path==='/assets/'+file.name);expect(response,'actual page loaded '+kind).toBeTruthy();expect(response.status).toBe(200);expect(response.sha256).toBe(file.sha256);
+ }
+ const child=expected.assets.find(x=>x.kind==='pdf');expect(workerTargets.some(x=>new URL(x.url).pathname==='/assets/'+child.name),'actual PDF child Worker target').toBe(true);
+ const served=JSON.parse(fs.readFileSync(path.join(run,'current-after-http.json'),'utf8')).find(x=>x.path==='/assets/'+child.name);expect(served.sha256).toBe(child.sha256);
+ await cdp.detach();
+ expect(apiPaths.every(x=>x.path==='/api/session'&&x.status===200)).toBe(true);
+ fs.writeFileSync(path.join(run,'current-page-evidence.json'),JSON.stringify({baseURL,viewport:page.viewportSize(),loadedAssets:loaded,workerTargets,pdfWorkerProof:'CDP executing Worker target URL plus independent HTTP content SHA256',apiPaths,shortPages:shortFiles.length,longPages:longFiles.length,refreshPreserved:true,historyCount:after.history.length,documentRevision:after.document.revision,realAiRequests:0,scope:'Only this new empty browser context; no user cookies/profile or existing document accessed'},null,2));
+});

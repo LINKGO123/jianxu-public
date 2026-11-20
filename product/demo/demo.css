@@ -1,0 +1,38 @@
+.demo-main .demo-start {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+    gap: 24px;
+    align-items: center;
+    overflow: hidden;
+}
+
+.demo-start img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+}
+
+.demo-main .demo-columns {
+    min-width: 0;
+}
+
+.demo-main .bottom-action {
+    margin-top: 20px;
+}
+
+.demo-main .section-field textarea {
+    margin-top: 6px;
+}
+
+.demo-footer {
+    margin: 24px 0 0;
+    color: #46596c;
+    font-size: .875rem;
+}
+
+@media (max-width: 760px) {
+    .demo-main .demo-start {
+        grid-template-columns: 1fr;
+    }
+}

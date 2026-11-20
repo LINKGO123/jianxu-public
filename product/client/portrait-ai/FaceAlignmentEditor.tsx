@@ -1,0 +1,27 @@
+import {useEffect,useRef,useState} from 'react';
+import {decodePhoto} from '../portrait/decode.js';
+import {canvasBlob} from '../portrait/image.js';
+import {drawFaceComposite,type Eyes,type Point} from './face-composite.js';
+export function FaceAlignmentEditor({source,template,documentId,baseRevision,candidateRequestId,apply,close}:{source:Blob;template:Blob;documentId:string;baseRevision:number;candidateRequestId?:string;apply:(blob:Blob,base:{id:string;revision:number;requestId?:string})=>Promise<void>;close:()=>void}){
+ const dialog=useRef<HTMLDialogElement>(null),sourceCanvas=useRef<HTMLCanvasElement>(null),templateCanvas=useRef<HTMLCanvasElement>(null),preview=useRef<HTMLCanvasElement>(null),base=useRef({id:documentId,revision:baseRevision,requestId:candidateRequestId});
+ const [images,setImages]=useState<{source:ImageBitmap;template:ImageBitmap}|null>(null),[error,setError]=useState(''),[ready,setReady]=useState(false),[busy,setBusy]=useState(false);
+ const [sourceEyes,setSourceEyes]=useState<Eyes>([{x:.38,y:.43},{x:.64,y:.41}]),[templateEyes,setTemplateEyes]=useState<Eyes>([{x:.41,y:.32},{x:.60,y:.32}]);
+ const next=useRef({source:0,template:0});
+ useEffect(()=>{const trigger=document.activeElement;dialog.current?.showModal();const controller=new AbortController();let original:ImageBitmap|undefined,style:ImageBitmap|undefined;
+  void(async()=>{try{original=await decodePhoto(source,controller.signal);style=await decodePhoto(template,controller.signal);controller.signal.throwIfAborted();setImages({source:original,template:style});}catch(e){if(!controller.signal.aborted)setError(e instanceof Error?e.message:'照片读取失败。');}})();
+  return()=>{controller.abort();original?.close();style?.close();dialog.current?.close();if(trigger instanceof HTMLElement&&trigger.isConnected)trigger.focus();};
+ },[]);
+ useEffect(()=>{if(!images||!sourceCanvas.current||!templateCanvas.current||!preview.current)return;setReady(false);setError('');
+  for(const [canvas,image,eyes] of [[sourceCanvas.current,images.source,sourceEyes],[templateCanvas.current,images.template,templateEyes]] as const){canvas.width=image.width;canvas.height=image.height;const ctx=canvas.getContext('2d');if(!ctx){setError('无法绘制对齐预览。');return;}ctx.drawImage(image,0,0);eyes.forEach((p,i)=>{ctx.beginPath();ctx.arc(p.x*canvas.width,p.y*canvas.height,Math.max(5,canvas.width*.01),0,Math.PI*2);ctx.fillStyle=i===0?'#f5ac44':'#4daaff';ctx.fill();});}
+  try{drawFaceComposite(preview.current,images.source,images.template,{width:images.source.width,height:images.source.height,eyes:sourceEyes},{width:images.template.width,height:images.template.height,eyes:templateEyes});setReady(true);}catch(e){setError(e instanceof Error?e.message:'预合成失败。');}
+ },[images,sourceEyes,templateEyes]);
+ function mark(kind:'source'|'template',e:React.MouseEvent<HTMLCanvasElement>){if(!images||busy)return;const box=e.currentTarget.getBoundingClientRect(),point={x:Math.max(0,Math.min(1,(e.clientX-box.left)/box.width)),y:Math.max(0,Math.min(1,(e.clientY-box.top)/box.height))},index=next.current[kind];next.current[kind]=1-index;const update=kind==='source'?setSourceEyes:setTemplateEyes;update(eyes=>eyes.map((p,i)=>i===index?point:p) as Eyes);}
+ function coordinate(kind:'source'|'template',index:number,axis:keyof Point,value:string){const update=kind==='source'?setSourceEyes:setTemplateEyes;update(eyes=>eyes.map((p,i)=>i===index?{...p,[axis]:Number(value)/100}:p) as Eyes);}
+ async function save(){if(!ready||!preview.current)return;setBusy(true);setError('');try{const blob=await canvasBlob(preview.current);await apply(blob,base.current);close();}catch(e){setError(e instanceof Error?e.message:'无法使用预合成。');}finally{setBusy(false);}}
+ return <dialog ref={dialog} className="photo-dialog face-alignment-dialog" aria-labelledby="face-alignment-title" onCancel={e=>{if(busy)e.preventDefault();}} onClose={close}>
+  <header className="sample-dialog-top"><h2 id="face-alignment-title">{candidateRequestId?'最后回贴原脸 · 不再发送AI':'先对齐本人面部，再整理衔接'}</h2><button aria-label="关闭面部对齐" disabled={busy} onClick={close}>×</button></header>
+  <p>按画面左右，在两张图中依次点击左眼、右眼；也可用下方百分比微调。橙点是左眼、蓝点是右眼。这里只在本机旋转、缩放和羽化原脸，不生成新五官、不提升原照清晰度。</p>
+  <div className="face-alignment-grid">{(['source','template'] as const).map(kind=><section key={kind}><h3>{kind==='source'?'本人原照':candidateRequestId?'已生成的AI画面':'韩式造型模板'}</h3><canvas ref={kind==='source'?sourceCanvas:templateCanvas} aria-label={kind==='source'?'本人原照眼睛定位':'模板眼睛定位'} onClick={e=>mark(kind,e)}/><fieldset disabled={!images||busy}>{(kind==='source'?sourceEyes:templateEyes).map((point,index)=><div key={index}>{(['x','y'] as const).map(axis=><label key={axis}>{kind==='source'?'本人':'模板'}{index===0?'左':'右'}眼{axis==='x'?'横':'纵'}向 (%)<input type="number" min={0} max={100} step={.1} value={Math.round(point[axis]*1000)/10} onChange={e=>coordinate(kind,index,axis,e.target.value)}/></label>)}</div>)}</fieldset></section>)}<section><h3>{candidateRequestId?'原脸回贴预览 · 不再经过AI':'本地预合成 · 尚未AI处理'}</h3><canvas ref={preview} aria-label="本地面部预合成预览"/><p>{candidateRequestId?'接缝、肤色或角度不合适时先重新定位。使用后仅更新本地候选，不发给AI；本人原照细节与低清纹理会保留，需确认后才进入简历。':'接缝、肤色或角度不合适时先重新定位。使用后，这张预合成图将作为实际模板发送；AI仍可能重绘脸部，结果须再核对。'}</p></section></div>
+  {error&&<p role="alert">{error}</p>}<button className="primary-button" disabled={!ready||busy} onClick={()=>void save()}>{candidateRequestId?'使用原脸回贴候选 · 不调用AI':'使用这张本地预合成 · 不发起生图'}</button>
+ </dialog>;
+}
