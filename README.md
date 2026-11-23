@@ -6,9 +6,23 @@
 
 **在浏览器里整理和排版简历。** 导入文本型 PDF 或 Word（DOCX），核对内容、调整版式，导出 PNG、PDF 或可编辑 Word。基础流程无需账号和 AI Key。
 
+[![简序首页：你的经历，值得被更好地看见](docs/home/hero.jpg)](#启动)
+
+[在本机运行](#启动) · [查看工作台与成品](#工作台与成品)
+
+## 首页导览
+
+![从原稿出发：上传简历、整理内容、排版与形象、确认生成](docs/home/journey.jpg)
+
+![一份经历，六种表达：公开版首页的扇形风格展柜](docs/home/styles.jpg)
+
+![好的建议，值得先看一眼：修改前后的示例卡片](docs/home/review.jpg)
+
+## 工作台与成品
+
 ![简序工作台使用虚构简历展示分页预览、风格选择和排版设置](jianxu-preview.png)
 
-[查看完整成品](jianxu-single-column.png) · [在本机运行](#启动)
+[查看完整成品](jianxu-single-column.png)
 
 ## 同一份简历，两种排版
 
