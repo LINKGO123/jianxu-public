@@ -1,8 +1,18 @@
 # 简序
 
-简序是本地运行的桌面简历工作台。可导入文本型 PDF 或 DOCX，核对和编辑经历，调整风格与布局，确认后下载 PNG、PDF 或可编辑 Word。基本流程无需账号和 AI Key。
+**在浏览器里整理和排版简历。** 导入文本型 PDF 或 Word（DOCX），核对内容、调整版式，导出 PNG、PDF 或可编辑 Word。基础流程无需账号和 AI Key。
 
-[查看由排版引擎生成的虚构简历示例](product/public/examples/editorial.png)
+![简序工作台使用虚构简历展示分页预览、风格选择和排版设置](jianxu-preview.png)
+
+[查看完整成品](jianxu-single-column.png) · [在本机运行](#启动)
+
+## 同一份简历，两种排版
+
+以下成品用同一份虚构简历、同一种视觉风格导出。切换布局时，经历内容保持原样。
+
+| 单栏标准 | 左侧信息栏 |
+| --- | --- |
+| <a href="jianxu-single-column.png"><img src="jianxu-single-column.png" width="320" alt="单栏简历，栏目纵向排列"></a> | <a href="jianxu-sidebar.png"><img src="jianxu-sidebar.png" width="320" alt="左侧信息栏简历，个人信息和经历分栏呈现"></a> |
 
 ## 启动
 
